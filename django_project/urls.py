@@ -21,7 +21,7 @@ from djangoapp.views import CompanyViewSet, EmployeeViewSet, CompanyEmployeeList
 
 router = DefaultRouter()
 router.register(r'companies', CompanyViewSet)
-router.register(r'companies', EmployeeViewSet)
+router.register(r'employees', EmployeeViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
