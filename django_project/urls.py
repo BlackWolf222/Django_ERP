@@ -20,11 +20,11 @@ from rest_framework.routers import DefaultRouter
 from djangoapp.views import CompanyViewSet, EmployeeViewSet, CompanyEmployeeListView
 
 router = DefaultRouter()
-router.register(r'companies', CompanyViewSet)
+router.register(r'company', CompanyViewSet)
 router.register(r'employees', EmployeeViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include(router.urls)),
-    path('companies/<int:company_id>/employees/', CompanyEmployeeListView.as_view, name='company-employees'),
+    path('company/<int:company_id>/employees/', CompanyEmployeeListView.as_view, name='company-employees'),
 ]
