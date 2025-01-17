@@ -6,13 +6,23 @@ class CompanySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Company
-        fields = ['id','name','address','phone','description','employee_count']
+        fields = ['id', 'name', 'address', 'phone', 'description', 'employee_count']
         read_only_fields = ['id','employee_count']
 
+class CompanyNestedSerializer(serializers.ModelSerializer):
+    """
+    Nested serializer to include company details in EmployeeSerializer.
+    """
+    class Meta:
+        model = Company
+        fields = ['id', 'name']
+
 class EmployeeSerializer(serializers.ModelSerializer):
+    company = CompanyNestedSerializer(read_only=True)
+    
     class Meta:
         model = Employee
-        fields = '__all__'
+        fields = ['id', 'name', 'email', 'job_title', 'age', 'company']
         read_only_fields = ['id']
 
     #delete mby

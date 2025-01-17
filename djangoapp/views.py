@@ -1,8 +1,8 @@
-from rest_framework import viewsets, generics,  status
+from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.decorators import action
-from django.db.models import Prefetch # for larger data
+from django.db.models import Prefetch
 from .models import Company, Employee
 from .serializers import CompanySerializer, EmployeeSerializer
 
@@ -11,7 +11,43 @@ from .serializers import CompanySerializer, EmployeeSerializer
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
+    http_method_names = ['get','put','post','patch','delete']
     
+    def partial_update(self, request, *args, **kwargs):
+        """
+        Overriding partial_update to restrict fields that can be updated with PATCH.
+        """
+        allowed_fields = {'phone', 'description'}
+        incoming_fields = set(request.data.keys())
+        # Validate that incoming fields are allowed
+        if not incoming_fields.issubset(allowed_fields):
+            raise PermissionDenied(
+                f"You can only update the fields: {', '.join(allowed_fields)}."
+            )
+        # Proceed with the normal partial_update process
+        return super().partial_update(request, *args, **kwargs)
+
+    def list(self, request, *args, **kwargs):
+        """
+        Overrides the default list method to handle the `with_employees` query parameter.
+        """
+        with_employees = request.query_params.get('with_employees', '0')  # Default is 0 (don't include employees)
+
+        if with_employees == '1':
+            # Include employees
+            companies = self.get_queryset()
+            data = []
+            for company in companies:
+                company_data = CompanySerializer(company).data
+                employees = Employee.objects.filter(company=company)
+                employee_data = EmployeeSerializer(employees, many=True).data
+                company_data['employees'] = employee_data
+                data.append(company_data)
+            return Response(data)
+
+        # Default behavior (without employees)
+        return super().list(request, *args, **kwargs)
+
     def retrieve(self, request, *args, **kwargs):
         company = self.get_object()
 
@@ -64,6 +100,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
         else:
             return Response(company_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
     def update(self, request, *args, **kwargs):
 
         if request.method == 'PUT':
@@ -76,17 +113,9 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
         if Employee.objects.filter(company=company).exists():
             raise ValidationError("Company cannot be deleted as it has associated employees.")
-
         return super().destroy(request, *args, **kwargs)
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     queryset = Employee.objects.all()
     serializer_class = EmployeeSerializer
-
-class CompanyEmployeeListView(generics.ListAPIView):
-
-    serializer_class = EmployeeSerializer
-
-    def get_queryset(self):
-        company_id = self.kwargs['company_id']
-        return Employee.objects.filter(company_id=company_id)
+    http_method_names = ['get','put','post','patch','delete']
