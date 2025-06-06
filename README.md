@@ -1,4 +1,4 @@
-Django Backend Developer Exercise Documentation
+Django ERP Documentation
 
   Steps to run the application locally
   
